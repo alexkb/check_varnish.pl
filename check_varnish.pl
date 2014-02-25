@@ -57,8 +57,8 @@ my %stats_help;
 
 my @perfdata;         # Holds perfdata output blocks
 my @nagios_output;    # Holds the text returned to Nagios
-my $status_flag = 0
-  ; # Nagios plugin return status (0 = OK, 1 = WARNING, 2 = CRITICAL, 3 = UNKNOWN)
+my $status_flag = 0 ; # Nagios plugin return status (0 = OK, 1 = WARNING, 2 = CRITICAL, 3 = UNKNOWN)
+my $gauge_value = 0;
 
 if ( scalar(@specs) == 0 ) {
     print_help();
@@ -113,22 +113,21 @@ foreach (@specs) {
     # The spec option is valid - let's process it
 
     # Retrieve the counter's value
-    my $value;
     if ( $persec == 1 ) {
-      $value = $stats_persec{$counter};
+      $gauge_value = $stats_persec{$counter};
     }
     else {
-      $value = $stats{$counter};
+      $gauge_value = $stats{$counter};
     }
       
 
   # Generate perfdata output - include warn + crit values if they were specified
     my $perfdata_string;
     if ( defined($warn) and defined($crit) ) {
-        $perfdata_string = "$counter=$value;$warn;$crit;;";
+        $perfdata_string = "$counter=$gauge_value;$warn;$crit;;";
     }
     else {
-        $perfdata_string = "$counter=$value;;;;";
+        $perfdata_string = "$counter=$gauge_value;;;;";
     }
 
     # Store this perfdata output
@@ -138,26 +137,26 @@ foreach (@specs) {
     my $nagios_text;
     if ($has_ranges) {
         if ( $direction eq 'u' ) {
-            if ( ( $value > $warn ) and ( $value < $crit ) ) {
+            if ( ( $gauge_value> $warn ) and ( $gauge_value < $crit ) ) {
                 push @nagios_output, "Counter '$counter' is over warn value";
                 $status_flag = 1 if $status_flag < 1;
             }
         }
         elsif ( $direction eq 'd' ) {
-            if ( ( $value < $warn ) and ( $value > $crit ) ) {
+            if ( ( $gauge_value < $warn ) and ( $gauge_value > $crit ) ) {
                 push @nagios_output, "Counter '$counter' is under warn value";
                 $status_flag = 1 if $status_flag < 1;
             }
         }
 
         if ( $direction eq 'u' ) {
-            if ( $value > $crit ) {
+            if ( $gauge_value > $crit ) {
                 push @nagios_output, "Counter '$counter' is over crit value";
                 $status_flag = 2 if $status_flag < 2;
             }
         }
         elsif ( $direction eq 'd' ) {
-            if ( $value < $crit ) {
+            if ( $gauge_value < $crit ) {
                 push @nagios_output, "Counter '$counter' is under crit value";
                 $status_flag = 2 if $status_flag < 2;
             }
@@ -207,8 +206,8 @@ sub return_output {
     my $state;
     $state = "WARNING -"                   if $status_flag == 1;
     $state = "CRITICAL -"                  if $status_flag == 2;
-    $state = "OK - all counters in range;" if $status_flag == 0;
-    print "$state $output | $perfdata_output\n";
+    $state = "OK - all counters in range" if $status_flag == 0;
+    print "$state$output: $gauge_value; | $perfdata_output\n";
     exit $status_flag;
 
 }
