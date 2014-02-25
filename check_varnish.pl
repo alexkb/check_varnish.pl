@@ -28,13 +28,19 @@ use Getopt::Long;
 
 # Parse command line options
 my @specs;
-my ( $list, $help );
+my ( $persec, $list, $help );
 GetOptions(
     "spec|s=s" => \@specs,
+    "persec|ps" => \$persec,
     "list|l"   => \$list,
     "help|h"   => \$help
 );
 
+# If the per second flag isn't set, then lets preset it to off.
+if ( not defined($persec) ) {
+  $persec = 0;
+}
+ 
 # Print help if they asked for it
 if ($help) {
     print_help();
@@ -46,6 +52,7 @@ if ($list) {
 
 # Global vars that hold the parsed varnishstat output
 my %stats;
+my %stats_persec;
 my %stats_help;
 
 my @perfdata;         # Holds perfdata output blocks
@@ -61,7 +68,7 @@ parse_varnishstat();
 
 foreach (@specs) {
 
-    my ( $counter, $warn, $crit, $direction ) = split( /,/, $_, 4 );
+    my ( $counter, $warn, $crit, $direction, $persecond_option ) = split( /,/, $_, 5 );
     my $has_ranges =
       0;  # Indicates if a given spec option has 'range' parameters (crit, warn)
 
@@ -97,6 +104,7 @@ foreach (@specs) {
         $has_ranges = 1;
 
     }
+    
 
     # Make sure the counter they want to monitor actually exists
     return_error("Not a valid counter in spec option - $counter")
@@ -105,7 +113,14 @@ foreach (@specs) {
     # The spec option is valid - let's process it
 
     # Retrieve the counter's value
-    my $value = $stats{$counter};
+    my $value;
+    if ( $persec == 1 ) {
+      $value = $stats_persec{$counter};
+    }
+    else {
+      $value = $stats{$counter};
+    }
+      
 
   # Generate perfdata output - include warn + crit values if they were specified
     my $perfdata_string;
@@ -159,9 +174,10 @@ sub parse_varnishstat {
 
     while (<VARNISHSTAT>) {
         s/\s+/ /g;    # normalise spaces
-        /(\S+) (\S+) \S+ (.*)/;
+        /(\S+) (\S+) (\S+) (.*)/;
         $stats{$1}      = $2;
-        $stats_help{$1} = $3;
+        $stats_persec{$1}      = $3;
+        $stats_help{$1} = $4;
     }
 
     # Add our special calculated counter 'cache_hit_percent'
@@ -216,7 +232,7 @@ this is 'cache_hit_percent', which is calculated like this:
 
 Usage:
 
-	check_varnish.pl --spec=[spec definition] --spec=[spec definition]
+	check_varnish.pl --spec=[spec definition] --spec=[spec definition] -ps
 	check_varnish.pl --list
 	check_varnish.pl --help
 
@@ -234,6 +250,10 @@ Options:
         warn when the cache isn't serving as many requests from memory as you'd expect. 
         
         If no 'u' or 'd' option is present, 'u' is assumed.
+        
+            --persec|ps
+        
+        The "ps" option tells the script to return the realtime per/second value, rather than the default raw value.
         
         If you don't want to set warn/crit values (i.e. just want perfdata output), then use this form:
         
