@@ -15,7 +15,7 @@ this is 'cache_hit_percent', which is calculated like this:
 
 Usage:
 
-	check_varnish.pl --spec=[spec definition] --spec=[spec definition]
+	check_varnish.pl --spec=[spec definition] --spec=[spec definition] -ps
 	check_varnish.pl --list
 	check_varnish.pl --help
 
@@ -24,7 +24,7 @@ Options:
     --spec=[spec definition], -s [spec definition]
         Specifies which Varnish counter to monitor. A spec definition looks like this:
         
-            --spec=counter_name,warnvalue,critvalue,[u|d]
+            --spec=counter_name,warnvalue,critvalue,[u|d] -ps
         
         The "u" or "d" option at the end determines whether you want to consider the warn and crit values as met
         when the counter is above ('u' - up) or below ('d' - down) these values.
@@ -35,6 +35,7 @@ Options:
         If no 'u' or 'd' option is present, 'u' is assumed.
         
         If you don't want to set warn/crit values (i.e. just want perfdata output), then use this form:
+        
         
             --spec=counter_name
         

@@ -58,6 +58,7 @@ my %stats_help;
 my @perfdata;         # Holds perfdata output blocks
 my @nagios_output;    # Holds the text returned to Nagios
 my $status_flag = 0 ; # Nagios plugin return status (0 = OK, 1 = WARNING, 2 = CRITICAL, 3 = UNKNOWN)
+my $gauge_key = '';
 my $gauge_value = 0;
 
 if ( scalar(@specs) == 0 ) {
@@ -69,12 +70,12 @@ parse_varnishstat();
 foreach (@specs) {
 
     my ( $counter, $warn, $crit, $direction, $persecond_option ) = split( /,/, $_, 5 );
-    my $has_ranges =
-      0;  # Indicates if a given spec option has 'range' parameters (crit, warn)
+    $gauge_key="${counter}_value";
+    my $has_ranges = 0;  # Indicates if a given spec option has 'range' parameters (crit, warn)
 
     # Validate the spec option
 
-# Must either have both warn and crit values, or leave the warn and crit specifications blank
+    # Must either have both warn and crit values, or leave the warn and crit specifications blank
     if ( defined($crit) and ( not defined($warn) ) ) {
         return_error(
 "Spec option $_ is bad: you must specify either warn & crit values, or none at all"
@@ -207,7 +208,7 @@ sub return_output {
     $state = "WARNING -"                   if $status_flag == 1;
     $state = "CRITICAL -"                  if $status_flag == 2;
     $state = "OK - all counters in range" if $status_flag == 0;
-    print "$state$output: $gauge_value; | $perfdata_output\n";
+    print "$state$output; $gauge_key=$gauge_value; | $perfdata_output\n";
     exit $status_flag;
 
 }
