@@ -115,6 +115,7 @@ foreach (@specs) {
 
     # Retrieve the counter's value
     if ( $persec == 1 ) {
+      $gauge_key = "${gauge_key}_persec";
       $gauge_value = $stats_persec{$counter};
     }
     else {
